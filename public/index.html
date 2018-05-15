@@ -1,0 +1,32 @@
+<html>
+	<head>
+	</head>
+	<body style='margin: 0px; overflow: hidden; text-align:center;'>
+		<button id="fullscreen" onclick="full()">Full Screen</button>
+		<script src="./THREEx.FullScreen.js"></script>
+		<script src="./bundle.js"></script>
+	</body>
+	<script>
+		bVisible = true;
+		function full() {
+			var b = document.getElementById('fullscreen');
+			b.style.visibility = "hidden";
+			THREEx.FullScreen.request();
+		}
+		document.addEventListener('webkitfullscreenchange', function(e) {
+			showHide(e);
+		}, false);
+		document.addEventListener('mozfullscreenchange', function(e) {
+			showHide(e);
+		}, false);
+		document.addEventListener('fullscreenchange', function(e) {
+			showHide(e);
+		}, false);
+		function showHide(e) {
+			var b = document.getElementById('fullscreen');
+			if(!bVisible)
+				b.style.visibility = "visible";
+			bVisible = !bVisible;
+		}
+	</script>
+</html>
