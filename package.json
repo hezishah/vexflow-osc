@@ -15,6 +15,7 @@
     "three-orbit-controls": "^82.1.0",
     "three-rounded-box": "^0.1.1",
     "threex": "^1.0.0",
+    "underscore": "^1.9.0",
     "vexflow": "^1.2.84"
   }
 }
