@@ -1,3 +1,4 @@
 call compile.bat
-explorer public\index.html
+explorer http://localhost:80
+rem explorer public\index.html
 

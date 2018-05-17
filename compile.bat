@@ -1,2 +1,2 @@
-browserify src\index.js -o public\bundle.js -d
+browserify src\index.es6 -o public\bundle.js -d
 

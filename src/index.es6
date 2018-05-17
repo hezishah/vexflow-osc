@@ -5,6 +5,10 @@ var THREE = require('three')
    ,OrbitControls = require('three-orbit-controls')(THREE)
    ,$ = require('jquery')
    ,_ = require('underscore');
+const JSONRPC = require('jsonrpc-bidirectional')
+   ,WebSocket = require("ws")
+   ,WebSocketServer = WebSocket.Server;
+
 
 /**********************************************/
 (function() {
@@ -276,7 +280,7 @@ cube.receiveShadow = false; //default
 scene.add( cube );
 
 
-var material2 = new THREE.MeshBasicMaterial( { map: texture } );
+var material2 = new THREE.MeshStandardMaterial( { map: texture } );
 var mesh = new THREE.Mesh(new THREE.PlaneGeometry(7, 4, 10, 10), material2);
 					mesh.overdraw = true;
 					mesh.doubleSided = true;
@@ -299,3 +303,101 @@ function animate() {
   //controls.update();
 }
 animate();
+
+/* Code for Websocket communication */
+
+            function proxyClassForORM(klass) {
+              return new Proxy(klass, {
+                apply(target, thisArg, rest) {
+                  return new target(...rest);
+                },
+              });
+            }
+            
+            function TestEndpoint()
+            {
+              proxyClassForORM(JSONRPC.EndpointBase.prototype.constructor).apply(
+                    this,
+                    [
+                        /*strName*/ "Test", 
+                        /*strPath*/ location.protocol + "//" + location.host + "/api", 
+                        /*objReflection*/ {},
+                        /*classReverseCallsClient*/ JSONRPC.Client
+                    ]
+                );
+            }
+ 
+            TestEndpoint.prototype = new JSONRPC.EndpointBase("TestEndpoint", "/api", {});
+            TestEndpoint.prototype.constructor = JSONRPC.EndpointBase;
+ 
+            TestEndpoint.prototype.ping = function(incomingRequest, strReturn){
+                return new Promise(function(fnResolve, fnReject){
+                    fnResolve(strReturn);
+                });
+            };
+ 
+ 
+            var client;
+            var clientWS;
+            var clientOfBidirectionalWS;
+ 
+ 
+            function testSimpleClient()
+            {
+                client = new JSONRPC.Client("http://" + location.host + "/api");
+                client.rpc("ping", ["Calling from html es5 client, http transport."]);//.then(genericTestsPromiseCatch).catch(genericTestsPromiseCatch);
+                
+                
+ 
+                clientWS = new JSONRPC.Client("http://" + location.host + "/api");
+ 
+                var ws = new WebSocket("ws://" + location.host +  "/api"); 
+                clientWS.addPlugin(new JSONRPC.Plugins.Client.WebSocketTransport(ws, /*bBidirectionalWebSocketMode*/ false));
+                
+                ws.addEventListener("open", function(event){
+                    client.rpc("ping", ["Calling from html es5 client, websocket transport."])
+                        .then(console.log)
+                        .catch(console.log)
+                    ;
+                });
+            }
+ 
+ 
+            function testBidirectionalRPC()
+            {
+                var jsonrpcServer = new JSONRPC.Server();
+                jsonrpcServer.registerEndpoint(new TestEndpoint());
+ 
+                // By default, JSONRPC.Server rejects all requests as not authenticated and not authorized.
+                jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthenticationSkip());
+                jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthorizeAll());
+ 
+                var ws = new WebSocket("ws://" + location.host +  "/api"); 
+ 
+                ws.addEventListener("open", function(event){
+                    var wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(jsonrpcServer);
+ 
+                    var nWebSocketConnectionID = wsJSONRPCRouter.addWebSocketSync(ws);
+ 
+                    clientOfBidirectionalWS = wsJSONRPCRouter.connectionIDToSingletonClient(nWebSocketConnectionID, JSONRPC.Client);
+ 
+                    clientOfBidirectionalWS.rpc("ping", ["Calling from html es5 client, websocket transport with bidirectional JSONRPC."])
+                        .then(console.log)
+                        .catch(console.log)
+                    ;
+                });
+            }
+        
+ 
+            window.addEventListener(
+                "load",
+                function(event){
+                    testSimpleClient();
+                    testBidirectionalRPC();
+                }
+            );
+
+
+/* Examples for converting bach to json */
+/* (,sssssssssssssssssssssss((6700)(6700)(6700)(6700))((6700)(6700)(6700)(6700)))((-1/4 -1/4 -1/4 -1/4)(-1/4 -1/4 -1/4 -1/4)) */
+/* (,sssssssssssssssssssssss((6700)(6700)(6700)(6700))((6700)(6700)(6700)(6700)))(( 1/4 1/4 1/4 1/4)( 1/4 1/4 1/4 1/4)) */
