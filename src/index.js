@@ -212,7 +212,9 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap; // default THREE.PCFShadowMap
 
 controls = new OrbitControls(camera, renderer.domElement);
 
-renderer.setSize( window.innerWidth, window.innerHeight );
+renderer.setSize( window.innerWidth* window.devicePixelRatio, window.innerHeight*window.devicePixelRatio );
+renderer.domElement.style.width = window.innerWidth + 'px';
+renderer.domElement.style.height = window.innerHeight + 'px';
 document.body.appendChild( renderer.domElement );
 
 window.addEventListener( 'resize', onWindowResize, false );
@@ -247,8 +249,8 @@ light.shadow.camera.far = 500      // default
 
 var vexCanvas = document.createElement('canvas');
 var ctx = vexCanvas.getContext("2d");
-ctx.canvas.width = 200*7;
-ctx.canvas.height = 200*4;
+ctx.canvas.width = window.innerWidth*2;
+ctx.canvas.height = window.innerHeight*2;
 ctx.fillStyle='white';
 ctx.fillRect(0,0,vexCanvas.width,vexCanvas.height);
 ctx.fillStyle='black';
@@ -260,6 +262,8 @@ json.render(vexCanvas);
 
 //document.body.prepend( vexCanvas );
 var texture = new THREE.Texture(vexCanvas);
+texture.magFilter = true;
+texture.mipmaps = true;
 texture.needsUpdate = true;
 
 var geometry = new RoundedBoxGeometry( 3, 3, 3, .1, 16);
@@ -278,7 +282,7 @@ var mesh = new THREE.Mesh(new THREE.PlaneGeometry(7, 4, 10, 10), material2);
 					mesh.doubleSided = true;
 					//mesh.position.x = 3 - vexCanvas.width / 2;
           //mesh.position.y = 3 - vexCanvas.height / 2;
-          mesh.position.z += 2;
+          mesh.position.z += 1;
 scene.add( mesh );
 
 camera.position.z = 5;
