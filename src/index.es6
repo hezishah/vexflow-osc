@@ -5,11 +5,6 @@ var THREE = require('three')
    ,OrbitControls = require('three-orbit-controls')(THREE)
    ,$ = require('jquery')
    ,_ = require('underscore');
-const JSONRPC = require('jsonrpc-bidirectional')
-   ,WebSocket = require("ws")
-   ,WebSocketServer = WebSocket.Server;
-
-
 /**********************************************/
 (function() {
 
@@ -232,9 +227,6 @@ function onWindowResize(){
 
 }
 
-ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.01);
-scene.add(ambientLight);
-
 //Create a PointLight and turn on shadows for the light
 var light = new THREE.PointLight( 0xffffff, 1, 100 );
 light.position.set( 2, 2, 10 );
@@ -245,6 +237,10 @@ light.shadow.mapSize.width = 512;  // default
 light.shadow.mapSize.height = 512; // default
 light.shadow.camera.near = 0.5;       // default
 light.shadow.camera.far = 500      // default
+
+ambientLight = new THREE.AmbientLight(0x404040);
+scene.add(ambientLight);
+
 
 /******************************/
 /* Let VexFlow Draw on Canvas */
@@ -282,11 +278,12 @@ scene.add( cube );
 
 var material2 = new THREE.MeshStandardMaterial( { map: texture } );
 var mesh = new THREE.Mesh(new THREE.PlaneGeometry(7, 4, 10, 10), material2);
-					mesh.overdraw = true;
-					mesh.doubleSided = true;
-					//mesh.position.x = 3 - vexCanvas.width / 2;
-          //mesh.position.y = 3 - vexCanvas.height / 2;
-          mesh.position.z += 1;
+mesh.overdraw = true;
+mesh.doubleSided = true;
+//mesh.position.x = 3 - vexCanvas.width / 2;
+//mesh.position.y = 3 - vexCanvas.height / 2;
+mesh.position.z += 1;
+mesh.castShadow = true; //default is false
 scene.add( mesh );
 
 camera.position.z = 5;
@@ -304,99 +301,42 @@ function animate() {
 }
 animate();
 
+var rotWorldMatrix;
+// Rotate an object around an arbitrary axis in world space       
+function rotateAroundWorldAxis(object, axis, radians) {
+    rotWorldMatrix = new THREE.Matrix4();
+    rotWorldMatrix.makeRotationAxis(axis.normalize(), radians);
+
+    // old code for Three.JS pre r54:
+    //  rotWorldMatrix.multiply(object.matrix);
+    // new code for Three.JS r55+:
+    rotWorldMatrix.multiply(object.matrix);                // pre-multiply
+
+    object.matrix = rotWorldMatrix;
+
+    // old code for Three.js pre r49:
+    // object.rotation.getRotationFromMatrix(object.matrix, object.scale);
+    // old code for Three.js pre r59:
+    // object.rotation.setEulerFromRotationMatrix(object.matrix);
+    // code for r59+:
+    object.rotation.setFromRotationMatrix(object.matrix);
+}
+
 /* Code for Websocket communication */
 
-            function proxyClassForORM(klass) {
-              return new Proxy(klass, {
-                apply(target, thisArg, rest) {
-                  return new target(...rest);
-                },
-              });
-            }
-            
-            function TestEndpoint()
-            {
-              proxyClassForORM(JSONRPC.EndpointBase.prototype.constructor).apply(
-                    this,
-                    [
-                        /*strName*/ "Test", 
-                        /*strPath*/ location.protocol + "//" + location.host + "/api", 
-                        /*objReflection*/ {},
-                        /*classReverseCallsClient*/ JSONRPC.Client
-                    ]
-                );
-            }
- 
-            TestEndpoint.prototype = new JSONRPC.EndpointBase("TestEndpoint", "/api", {});
-            TestEndpoint.prototype.constructor = JSONRPC.EndpointBase;
- 
-            TestEndpoint.prototype.ping = function(incomingRequest, strReturn){
-                return new Promise(function(fnResolve, fnReject){
-                    fnResolve(strReturn);
-                });
-            };
- 
- 
-            var client;
-            var clientWS;
-            var clientOfBidirectionalWS;
- 
- 
-            function testSimpleClient()
-            {
-                client = new JSONRPC.Client("http://" + location.host + "/api");
-                client.rpc("ping", ["Calling from html es5 client, http transport."]);//.then(genericTestsPromiseCatch).catch(genericTestsPromiseCatch);
-                
-                
- 
-                clientWS = new JSONRPC.Client("http://" + location.host + "/api");
- 
-                var ws = new WebSocket("ws://" + location.host +  "/api"); 
-                clientWS.addPlugin(new JSONRPC.Plugins.Client.WebSocketTransport(ws, /*bBidirectionalWebSocketMode*/ false));
-                
-                ws.addEventListener("open", function(event){
-                    client.rpc("ping", ["Calling from html es5 client, websocket transport."])
-                        .then(console.log)
-                        .catch(console.log)
-                    ;
-                });
-            }
- 
- 
-            function testBidirectionalRPC()
-            {
-                var jsonrpcServer = new JSONRPC.Server();
-                jsonrpcServer.registerEndpoint(new TestEndpoint());
- 
-                // By default, JSONRPC.Server rejects all requests as not authenticated and not authorized.
-                jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthenticationSkip());
-                jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthorizeAll());
- 
-                var ws = new WebSocket("ws://" + location.host +  "/api"); 
- 
-                ws.addEventListener("open", function(event){
-                    var wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(jsonrpcServer);
- 
-                    var nWebSocketConnectionID = wsJSONRPCRouter.addWebSocketSync(ws);
- 
-                    clientOfBidirectionalWS = wsJSONRPCRouter.connectionIDToSingletonClient(nWebSocketConnectionID, JSONRPC.Client);
- 
-                    clientOfBidirectionalWS.rpc("ping", ["Calling from html es5 client, websocket transport with bidirectional JSONRPC."])
-                        .then(console.log)
-                        .catch(console.log)
-                    ;
-                });
-            }
-        
- 
-            window.addEventListener(
-                "load",
-                function(event){
-                    testSimpleClient();
-                    testBidirectionalRPC();
-                }
-            );
-
+var host = window.document.location.host;
+var ws = new WebSocket('ws://' + host);
+ws.onmessage = function (event) {
+  var text = event.data;
+  console.log(text);
+  var message = text.split(',');
+  if(message[0]==='metro')
+  {
+    console.log("Metro Detected:"+message[1]);
+    var xAxis = new THREE.Vector3(0,0,-1);
+    rotateAroundWorldAxis(cube, xAxis, (parseInt(message[1])*2.0) *Math.PI / 180.0);
+  }
+};
 
 /* Examples for converting bach to json */
 /* (,sssssssssssssssssssssss((6700)(6700)(6700)(6700))((6700)(6700)(6700)(6700)))((-1/4 -1/4 -1/4 -1/4)(-1/4 -1/4 -1/4 -1/4)) */

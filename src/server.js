@@ -1,4 +1,3 @@
-const JSONRPC = require('jsonrpc-bidirectional');
 const WebSocket = require("ws");
 const WebSocketServer = WebSocket.Server;
 const express = require('express');
@@ -6,86 +5,28 @@ const http = require('http');
 var app = express();
 
 const httpServer = http.createServer(app);
-const jsonrpcServer = new JSONRPC.Server();
 
-class TestEndpoint extends JSONRPC.EndpointBase 
-{
-    constructor()
-    {
-        super(
-            /*strName*/ "Test", 
-            /*strPath*/ "/api", 
-            /*objReflection*/ {}, // Reserved for future use.
-            /*classReverseCallsClient*/ JSONRPC.Client // This may be left undefined
-        );
- 
-        // The class reference classReverseCallsClient must be specified to enable bidirectional JSON-RPC over a single WebSocket connection.
-        // If may be left undefined for one-way interrogation.
-        // It must contain a reference to a subclass of JSONRPC.Client or a reference to the JSONRPC.Client class itself.
-    }
- 
-    async ping(incomingRequest, strReturn, bThrow)
-    {
-        if(bThrow)
-        {
-            throw new JSONRPC.Exception("You asked me to throw.");
-        }
- 
-        // If using bidirectional JSON-RPC over a single WebSocket connection, a JSONRPC.Client subclass instance is available.
-        // It is an instance of the class specified in the constructor of this EndpointBase subclass, `classReverseCallsClient`.
-        // Also, it is attached to the same WebSocket connection of the current request.
-        await incomingRequest.reverseCallsClient.rpc("methodOnTheOtherSide", ["paramValue", true, false]);
- 
-        return strReturn;
-    }
- 
-    async divide(incomingRequest, nLeft, nRight)
-    {
-        return nLeft / nRight;
-    }
-};
+var wss = new WebSocketServer({server: httpServer});
 
-jsonrpcServer.registerEndpoint(new TestEndpoint());
- 
-jsonrpcServer.attachToHTTPServer(httpServer, "/api/");
- 
-// By default, JSONRPC.Server rejects all requests as not authenticated and not authorized.
-jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthenticationSkip());
-jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthorizeAll());
- 
-httpServer.listen(80);
+var validConnection = false;
+var globalws = null;
+wss.on('connection', function (ws) {
+  validConnection = true;
+  globalws = ws;
+  /*var id = setInterval(function () {
+    ws.send(JSON.stringify(process.memoryUsage()), function () {  });
+  }, 100);*/
+  console.log('started client interval');
+  ws.on('close', function () {
+    validConnection = false;
+    globalws = null;
+    console.log('stopping client interval');
+    /*clearInterval(id);*/
+  });
+});
 
 app.use('/', express.static('public'))
-
-//const jsonrpcServer = new JSONRPC.Server();
-//jsonrpcServer.registerEndpoint(new TestEndpoint()); // See "Define an endpoint" section above.
-
-// By default, JSONRPC.Server rejects all requests as not authenticated and not authorized.
-//jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthenticationSkip());
-//jsonrpcServer.addPlugin(new JSONRPC.Plugins.Server.AuthorizeAll());
-
-const wsJSONRPCRouter = new JSONRPC.BidirectionalWebsocketRouter(jsonrpcServer);
-
-// Optional.
-wsJSONRPCRouter.on("madeReverseCallsClient", (clientReverseCalls) => { /*add plugins or just setup the client even further*/ });
-
-// Alternatively reuse existing web server: 
-// const webSocketServer = new WebSocketServer({server: httpServerInstance});
-const webSocketServer = new WebSocketServer({port: 8080});
-webSocketServer.on("error", (error) => {console.error(error); process.exit(1);});
-
-webSocketServer.on(
-    "connection", 
-    async (webSocket, upgradeRequest) => 
-    {
-        const nWebSocketConnectionID = wsJSONRPCRouter.addWebSocketSync(webSocket, upgradeRequest);
-        // Do something with nWebSocketConnectionID and webSocket here, like register them as a pair with an authorization plugin.
-
-        // const clientForThisConnection = wsJSONRPCRouter.connectionIDToSingletonClient(nWebSocketConnectionID, JSONRPC.Client);
-    }
-);
-
-
+httpServer.listen(3000);
 
 /* UDP Communication */
 const dgram = require('dgram');
@@ -113,22 +54,46 @@ function listenPort(portNum, onMessage) {
 
 
 l1 = new listenPort(5551,function(msg, rinfo){
+    if(validConnection)
+    {
+       globalws.send("ch1, " + msg.toString());
+    }
     console.log(`${msg}`);
 });
 l2 = new listenPort(5552,function(msg, rinfo){
+    if(validConnection)
+    {
+       globalws.send("ch2, " + msg.toString());
+    }
     console.log(`${msg}`);
 });
 l3 = new listenPort(5553,function(msg, rinfo){
+    if(validConnection)
+    {
+       globalws.send("ch3, " + msg.toString());
+    }
     console.log(`${msg}`);
 });
 l4 = new listenPort(5554,function(msg, rinfo){
+    if(validConnection)
+    {
+       globalws.send("ch4, " + msg.toString());
+    }
     console.log(`${msg}`);
 });
 l5 = new listenPort(5555,function(msg, rinfo){
+    if(validConnection)
+    {
+       globalws.send("ch5, " + msg.toString());
+    }
     console.log(`${msg}`);
 });
 l6 = new listenPort(5556,function(msg, rinfo){
-    console.log(`${msg}`);
+    if(validConnection)
+    {
+       globalws.send("metro, " + msg.toString());
+    }
+   console.log(`${msg}`);
 });
 
 // server listening 0.0.0.0:41234
