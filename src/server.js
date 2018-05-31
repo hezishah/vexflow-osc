@@ -59,6 +59,8 @@ String.prototype.replaceAll = function(search, replacement) {
 var pitchClass = ['A','Bb','B','C','Db','D','Eb','E','F','Gb','G','Ab'];
 var intervalDict = {'1/4': 'q', '1/8': '8d', '1/16': '16', '-1/4': 'qr', '-1/8': '8dr', '-1/16': '16r' };
 
+var intervalDict2 = {'w': 2.0, 'w': 2.0, 'q': 1.0, '8d': 0.5, '16': 0.25 };
+
 function bachToJson(bachData)
 {
     var level = 0;
@@ -125,15 +127,28 @@ function bachToJson(bachData)
             valStr+=c;
         }
     }
+    var index = 0;
     for(barsIndex in barsNotes)
     {
         bars.push(
             barsNotes[barsIndex].map(function(e, i) {
-                return [e, intervalsArray[i]];}));
+                var retval = null
+                if(intervalsArray[index].endsWith('r'))
+                {
+                    retval = [["B"], intervalsArray[index]];
+                }
+                else
+                {
+                    retval = [e, intervalsArray[index]];
+                }
+                index++;
+                return retval;
+            }));
     }
     return bars;
 }
 
+/*
 l1 = new listenPort(5551,function(msg, rinfo){
     vexJson = bachToJson(msg.toString());
     vexJson = JSON.stringify({ch:'ch1', vex:vexJson})
@@ -179,6 +194,7 @@ l5 = new listenPort(5555,function(msg, rinfo){
     }
     console.log(`${msg}`);
 });
+*/
 l6 = new listenPort(5556,function(msg, rinfo){
     for(var ws in globalws)
     {
@@ -187,6 +203,52 @@ l6 = new listenPort(5556,function(msg, rinfo){
         globalws[ws].send(metroJson);
     }
    console.log(`${msg}`);
+});
+
+lb1 = new listenPort(5557,function(msg, rinfo){
+    vexJson = bachToJson(msg.toString());
+    vexJson = JSON.stringify({ch:'ch1', vex:vexJson})
+    for(var ws in globalws)
+    {
+        globalws[ws].send(vexJson);
+    }
+    console.log(`${msg}`);
+});
+lb2 = new listenPort(5558,function(msg, rinfo){
+    vexJson = bachToJson(msg.toString());
+    vexJson = JSON.stringify({ch:'ch2', vex:vexJson})
+    for(var ws in globalws)
+    {
+        globalws[ws].send(vexJson);
+    }
+    console.log(`${msg}`);
+});
+lb3 = new listenPort(5559,function(msg, rinfo){
+    vexJson = bachToJson(msg.toString());
+    vexJson = JSON.stringify({ch:'ch3', vex:vexJson})
+    for(var ws in globalws)
+    {
+        globalws[ws].send(vexJson);
+    }
+    console.log(`${msg}`);
+});
+lb4 = new listenPort(5560,function(msg, rinfo){
+    vexJson = bachToJson(msg.toString());
+    vexJson = JSON.stringify({ch:'ch4', vex:vexJson})
+    for(var ws in globalws)
+    {
+        globalws[ws].send(vexJson);
+    }
+    console.log(`${msg}`);
+});
+lb5 = new listenPort(5561,function(msg, rinfo){
+    vexJson = bachToJson(msg.toString());
+    vexJson = JSON.stringify({ch:'ch5', vex:vexJson})
+    for(var ws in globalws)
+    {
+        globalws[ws].send(vexJson);
+    }
+    console.log(`${msg}`);
 });
 
 // server listening 0.0.0.0:41234

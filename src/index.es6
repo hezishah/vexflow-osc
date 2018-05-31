@@ -95,7 +95,7 @@ var THREE = require('three')
     if (options == null) options = {};
 
     _(clef).each(function(c) {
-      this.staves[c] = new Vex.Flow.Stave(10, (this.stave_offset), (this.width - 20)/4, {glyph_spacing_px:1});
+      this.staves[c] = new Vex.Flow.Stave(10, (this.stave_offset), (this.width)/4, {glyph_spacing_px:1});
       this.staves[c].addClef(c).addKeySignature(keySignature).setContext(this.context).draw();
       this.stave_offset += this.stave_delta;
     }, this);
@@ -124,7 +124,12 @@ var THREE = require('three')
   };
   
   Vex.Flow.JSON.prototype.draw_notes = function(notes) {
+    var beams = Vex.Flow.Beam.generateBeams(notes, {groups : [ new Vex.Flow.Fraction(1,2)]});
     Vex.Flow.Formatter.FormatAndDraw(this.context, this.staves["treble"], notes);
+    var beamContext = this.context;
+    _(beams).each( function (beam, i){
+      beam.setContext(beamContext).draw();
+    })
   };
   
   Vex.Flow.JSON.prototype.stave_voices = function(voices) {
@@ -135,14 +140,14 @@ var THREE = require('three')
         resolution: Vex.Flow.RESOLUTION
       });
       
-      stave_voice.setStrict(false);
+      stave_voice.setStrict(true);
       stave_voice.addTickables(this.stave_notes(voice.notes));
       return stave_voice;
     }, this);
   };
   
   Vex.Flow.JSON.prototype.draw_voices = function(voices) {
-    var formatter = new Vex.Flow.Formatter().joinVoices(voices).format(voices, this.width - 120);
+    var formatter = new Vex.Flow.Formatter().joinVoices(voices).format(voices, voices.length * this.width / 8 /*this.width - 120*/);
     _(voices).each(function(voice) {
       voice.draw(this.context, this.staves["treble"]);
     }, this);
@@ -276,6 +281,7 @@ cube.overdraw = true;
 cube.doubleSided = true;
 cube.castShadow = true; //default is false
 cube.receiveShadow = false; //default
+cube.position.y += -2;
 scene.add( cube );
 
 
@@ -339,16 +345,16 @@ ws.onmessage = function (event) {
   {
     console.log("Metro Detected:"+message['vex']);
     var xAxis = new THREE.Vector3(0,0,-1);
-    rotateAroundWorldAxis(cube, xAxis, (parseInt(message['vex'])*2.0) *Math.PI / 180.0);
+    rotateAroundWorldAxis(cube, xAxis, (360.0/32.0) *Math.PI / 180.0);
   }
   if(message['ch'].startsWith('ch'))
   {
     let channel = parseInt(message['ch'].substr(2,1))
     bars = message['vex'];
-    str = '"clef": "treble", "notes":[' ;
+    str = "";
     for(var bIndex = 0;bIndex<bars.length;bIndex++)
     {
-      if(bIndex)
+      if(bIndex || str.length)
       {
         str+=', { "barnote": "true" },';
       }
@@ -371,8 +377,9 @@ ws.onmessage = function (event) {
         str+='{ "duration":"'+vex[i][1]+'", "keys": ['+keysStr+']}';
       }
     }
-    str += "]";
-    vexStr[channel-1]=str;
+    if(vexStr[channel-1].length)
+      vexStr[channel-1]+=', { "barnote": "true" },';
+    vexStr[channel-1]+=str;
   }
   var ctx = vexCanvas.getContext("2d");
   ctx.fillStyle='white';
@@ -380,7 +387,7 @@ ws.onmessage = function (event) {
   ctx.fillStyle='black';
   for(var index=0;index<vexStr.length;index++)
   {
-    var json = new Vex.Flow.JSON(JSON.parse('{ '+vexStr[index]+' }'),index*100) ;
+    var json = new Vex.Flow.JSON(JSON.parse('{ "clef": "treble", "notes":['+vexStr[index]+' ]}'),index*100) ;
     json.render(vexCanvas);
   }
   texture.needsUpdate = true;
