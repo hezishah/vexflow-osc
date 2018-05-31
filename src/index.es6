@@ -344,24 +344,32 @@ ws.onmessage = function (event) {
   if(message['ch'].startsWith('ch'))
   {
     let channel = parseInt(message['ch'].substr(2,1))
-    vex = message['vex'];
+    bars = message['vex'];
     str = '"clef": "treble", "notes":[' ;
-    for(var i=0;i<vex.length;i++)
+    for(var bIndex = 0;bIndex<bars.length;bIndex++)
     {
-      if(i)
+      if(bIndex)
       {
-        str+=",";
+        str+=', { "barnote": "true" },';
       }
-      var keysStr = "";
-      for(var k=0;k<vex[i][0].length;k++)
+      var vex = bars[bIndex];
+      for(var i=0;i<vex.length;i++)
       {
-        if(k)
+        if(i)
         {
-          keysStr+=",";
+          str+=",";
         }
-        keysStr += '"'+vex[i][0][k]+'"';
-      } 
-      str+='{ "duration":"'+vex[i][1]+'", "keys": ['+keysStr+']}';
+        var keysStr = "";
+        for(var k=0;k<vex[i][0].length;k++)
+        {
+          if(k)
+          {
+            keysStr+=",";
+          }
+          keysStr += '"'+vex[i][0][k]+'"';
+        } 
+        str+='{ "duration":"'+vex[i][1]+'", "keys": ['+keysStr+']}';
+      }
     }
     str += "]";
     vexStr[channel-1]=str;
@@ -382,3 +390,26 @@ ws.onmessage = function (event) {
 /* Examples for converting bach to json */
 /* (,sssssssssssssssssssssss((6700)(6700)(6700)(6700))((6700)(6700)(6700)(6700)))((-1/4 -1/4 -1/4 -1/4)(-1/4 -1/4 -1/4 -1/4)) */
 /* (,sssssssssssssssssssssss((6700)(6700)(6700)(6700))((6700)(6700)(6700)(6700)))(( 1/4 1/4 1/4 1/4)( 1/4 1/4 1/4 1/4)) */
+/*
+    render_vexflow("explicit-voices", {
+      clef: "treble",
+      voices: [
+        { time: "4/4", notes: [
+          { duration: "h", keys: ["C", "Eb", "F", "A"] },
+          { duration: "h", keys: ["Bb", "D", "F", "A"] },
+          { barnote: true },
+          { duration: "q", keys: ["C", "Eb", "G", "Bb"] },
+          { duration: "q", keys: ["C", "Eb", "F", "A"] },
+          { duration: "h", keys: ["Bb", "D", "F", "A"] },
+          { barnote: true },
+          { duration: "q", keys: ["C", "Eb", "G", "Bb"] },
+          { duration: "q", keys: ["C", "Eb", "F", "A"] },
+          { duration: "h", keys: ["Bb", "D", "F", "A"] },
+          { barnote: true },
+          { duration: "q", keys: ["C", "Eb", "G", "Bb"] },
+          { duration: "q", keys: ["C", "Eb", "F", "A"] },
+          { duration: "h", keys: ["Bb", "D", "F", "A"] }
+        ]}
+      ]
+    });
+*/

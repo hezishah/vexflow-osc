@@ -68,6 +68,8 @@ function bachToJson(bachData)
     var level=0;
     var pitchOrInterval = 0;
     var valStr = "";
+    var barsNotes = [];
+    var bars = [];
     for(var i=0;i<bachData.length;i++)
     {
         var c = bachData[i];
@@ -111,16 +113,25 @@ function bachToJson(bachData)
             {
                 pitchOrInterval = 1;
             }
+            if(level==1)
+            {
+                if(notesArray.length)
+                    barsNotes.push(notesArray)
+                    notesArray = [];
+            }
         }
         else
         {
             valStr+=c;
         }
     }
-    var c = notesArray.map(function(e, i) {
-        return [e, intervalsArray[i]];
-      });
-    return c;
+    for(barsIndex in barsNotes)
+    {
+        bars.push(
+            barsNotes[barsIndex].map(function(e, i) {
+                return [e, intervalsArray[i]];}));
+    }
+    return bars;
 }
 
 l1 = new listenPort(5551,function(msg, rinfo){
