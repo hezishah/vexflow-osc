@@ -9,17 +9,18 @@ const httpServer = http.createServer(app);
 var wss = new WebSocketServer({server: httpServer});
 
 var validConnection = false;
-var globalws = null;
+var globalws = [];
 wss.on('connection', function (ws) {
-  validConnection = true;
-  globalws = ws;
+  globalws.push(ws);
   /*var id = setInterval(function () {
     ws.send(JSON.stringify(process.memoryUsage()), function () {  });
   }, 100);*/
   console.log('started client interval');
   ws.on('close', function () {
-    validConnection = false;
-    globalws = null;
+    var index = globalws.indexOf(this);
+    if (index > -1) {
+      globalws.splice(index, 1);
+    }
     console.log('stopping client interval');
     /*clearInterval(id);*/
   });
@@ -51,47 +52,128 @@ function listenPort(portNum, onMessage) {
 
     server.bind(portNum);
 }
+String.prototype.replaceAll = function(search, replacement) {
+    var target = this;
+    return target.replace(new RegExp(search, 'g'), replacement);
+};
+var pitchClass = ['A','Bb','B','C','Db','D','Eb','E','F','Gb','G','Ab'];
+var intervalDict = {'1/4': 'q', '1/8': '8d', '1/16': '16', '-1/4': 'qr', '-1/8': '8dr', '-1/16': '16r' };
 
+function bachToJson(bachData)
+{
+    var level = 0;
+    var notesOrIntervals = 0;
+    var notesArray = [];
+    var intervalsArray = [];
+    var level=0;
+    var pitchOrInterval = 0;
+    var valStr = "";
+    for(var i=0;i<bachData.length;i++)
+    {
+        var c = bachData[i];
+        if(c==='(')
+        {
+            level++;
+        }
+        else if(c===')')
+        {
+            if(pitchOrInterval)
+            {
+                if(valStr.length)
+                {
+                    valStr = valStr.split(' ')
+                    for(var iStr in valStr)
+                    {
+                        if(valStr[iStr].length)
+                        intervalsArray.push(intervalDict[valStr[iStr]]);
+                    }
+                    valStr = ""
+                }
+            }
+            else
+            {
+                if(valStr.length)
+                {
+                    pitchList = []
+                    valStr = valStr.split(' ')
+                    for(var iStr in valStr)
+                    {
+                        if(valStr[iStr].length)
+                            pitchList.push(pitchClass[(3+parseInt(valStr[iStr])/100)%12]);
+                    }
+                    if(pitchList.length)
+                        notesArray.push(pitchList);
+                    valStr = ""
+                }
+            }
+            level--;
+            if(level==0)
+            {
+                pitchOrInterval = 1;
+            }
+        }
+        else
+        {
+            valStr+=c;
+        }
+    }
+    var c = notesArray.map(function(e, i) {
+        return [e, intervalsArray[i]];
+      });
+    return c;
+}
 
 l1 = new listenPort(5551,function(msg, rinfo){
-    if(validConnection)
+    vexJson = bachToJson(msg.toString());
+    vexJson = JSON.stringify({ch:'ch1', vex:vexJson})
+    for(var ws in globalws)
     {
-       globalws.send("ch1, " + msg.toString());
+        globalws[ws].send(vexJson);
     }
     console.log(`${msg}`);
 });
 l2 = new listenPort(5552,function(msg, rinfo){
-    if(validConnection)
+    vexJson = bachToJson(msg.toString());
+    vexJson = JSON.stringify({ch:'ch2', vex:vexJson})
+    for(var ws in globalws)
     {
-       globalws.send("ch2, " + msg.toString());
+        globalws[ws].send(vexJson);
     }
     console.log(`${msg}`);
 });
 l3 = new listenPort(5553,function(msg, rinfo){
-    if(validConnection)
+    vexJson = bachToJson(msg.toString());
+    vexJson = JSON.stringify({ch:'ch3', vex:vexJson})
+    for(var ws in globalws)
     {
-       globalws.send("ch3, " + msg.toString());
+        globalws[ws].send(vexJson);
     }
     console.log(`${msg}`);
 });
 l4 = new listenPort(5554,function(msg, rinfo){
-    if(validConnection)
+    vexJson = bachToJson(msg.toString());
+    vexJson = JSON.stringify({ch:'ch4', vex:vexJson})
+    for(var ws in globalws)
     {
-       globalws.send("ch4, " + msg.toString());
+        globalws[ws].send(vexJson);
     }
     console.log(`${msg}`);
 });
 l5 = new listenPort(5555,function(msg, rinfo){
-    if(validConnection)
+    vexJson = bachToJson(msg.toString());
+    vexJson = JSON.stringify({ch:'ch5', vex:vexJson})
+    for(var ws in globalws)
     {
-       globalws.send("ch5, " + msg.toString());
+        globalws[ws].send(vexJson);
     }
     console.log(`${msg}`);
 });
 l6 = new listenPort(5556,function(msg, rinfo){
-    if(validConnection)
+    for(var ws in globalws)
     {
-       globalws.send("metro, " + msg.toString());
+        str = `${msg}`[0];
+        metroJson = JSON.stringify({ch:'metro', vex:str.toString()})
+        globalws[ws].send(metroJson);
     }
    console.log(`${msg}`);
 });

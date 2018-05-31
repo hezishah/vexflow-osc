@@ -12,9 +12,9 @@ var THREE = require('three')
     throw "Please be sure vexflow is required before requiring vexflow.json."
   }
 
-  Vex.Flow.JSON = function(data) {
+  Vex.Flow.JSON = function(data, offset) {
     this.data = data;
-    this.stave_offset = 0;
+    this.stave_offset = offset;
     this.stave_delta = 60;
     this.staves = {};
     this.interpret_data();
@@ -95,7 +95,7 @@ var THREE = require('three')
     if (options == null) options = {};
 
     _(clef).each(function(c) {
-      this.staves[c] = new Vex.Flow.Stave(10, this.stave_offset, this.width - 20);
+      this.staves[c] = new Vex.Flow.Stave(10, (this.stave_offset), (this.width - 20)/4, {glyph_spacing_px:1});
       this.staves[c].addClef(c).addKeySignature(keySignature).setContext(this.context).draw();
       this.stave_offset += this.stave_delta;
     }, this);
@@ -212,6 +212,9 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap; // default THREE.PCFShadowMap
 controls = new OrbitControls(camera, renderer.domElement);
 
 renderer.setSize( window.innerWidth* window.devicePixelRatio, window.innerHeight*window.devicePixelRatio );
+camera.aspect = window.innerWidth / window.innerHeight;
+camera.updateProjectionMatrix();
+
 renderer.domElement.style.width = window.innerWidth + 'px';
 renderer.domElement.style.height = window.innerHeight + 'px';
 document.body.appendChild( renderer.domElement );
@@ -219,16 +222,15 @@ document.body.appendChild( renderer.domElement );
 window.addEventListener( 'resize', onWindowResize, false );
 
 function onWindowResize(){
-
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-
-    renderer.setSize( window.innerWidth, window.innerHeight );
-
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize( window.innerWidth*window.devicePixelRatio, window.innerHeight*window.devicePixelRatio );
+  renderer.domElement.style.width = window.innerWidth + 'px';
+  renderer.domElement.style.height = window.innerHeight + 'px';  
 }
 
 //Create a PointLight and turn on shadows for the light
-var light = new THREE.PointLight( 0xffffff, 1, 100 );
+var light = new THREE.PointLight( 0xffffff, .1, 100 );
 light.position.set( 2, 2, 10 );
 light.castShadow = true;            // default false
 scene.add( light );
@@ -238,7 +240,7 @@ light.shadow.mapSize.height = 512; // default
 light.shadow.camera.near = 0.5;       // default
 light.shadow.camera.far = 500      // default
 
-ambientLight = new THREE.AmbientLight(0x404040);
+ambientLight = new THREE.AmbientLight(0xF0F0F0);
 scene.add(ambientLight);
 
 
@@ -249,13 +251,14 @@ scene.add(ambientLight);
 
 var vexCanvas = document.createElement('canvas');
 var ctx = vexCanvas.getContext("2d");
-ctx.canvas.width = window.innerWidth*2;
-ctx.canvas.height = window.innerHeight*2;
+let scale = 6.0;
+ctx.canvas.width = window.innerWidth*scale/2.0;
+ctx.canvas.height = window.innerHeight*scale/2.0;
 ctx.fillStyle='white';
 ctx.fillRect(0,0,vexCanvas.width,vexCanvas.height);
 ctx.fillStyle='black';
 var json = new Vex.Flow.JSON(["C", "E", "G", "Bb"]);
-json.render(vexCanvas);
+json.render(vexCanvas,{scale:scale/2});
 //ctx.globalCompositeOperation='difference';
 //ctx.fillStyle='white';
 //ctx.fillRect(0,0,vexCanvas.width,vexCanvas.height);
@@ -266,7 +269,7 @@ texture.magFilter = true;
 texture.mipmaps = true;
 texture.needsUpdate = true;
 
-var geometry = new RoundedBoxGeometry( 3, 3, 3, .1, 16);
+var geometry = new RoundedBoxGeometry( 1, 1, 3, .1, 16);
 var material = new THREE.MeshStandardMaterial( { color: 0xFFFFFFFF } );
 var cube = new THREE.Mesh( geometry, material );
 cube.overdraw = true;
@@ -277,9 +280,10 @@ scene.add( cube );
 
 
 var material2 = new THREE.MeshStandardMaterial( { map: texture } );
-var mesh = new THREE.Mesh(new THREE.PlaneGeometry(7, 4, 10, 10), material2);
+var mesh = new THREE.Mesh(new THREE.PlaneGeometry(9, 5, 10, 10), material2);
 mesh.overdraw = true;
 mesh.doubleSided = true;
+
 //mesh.position.x = 3 - vexCanvas.width / 2;
 //mesh.position.y = 3 - vexCanvas.height / 2;
 mesh.position.z += 1;
@@ -326,16 +330,53 @@ function rotateAroundWorldAxis(object, axis, radians) {
 
 var host = window.document.location.host;
 var ws = new WebSocket('ws://' + host);
+var vexStr = ["","","","",""]
 ws.onmessage = function (event) {
   var text = event.data;
   console.log(text);
-  var message = text.split(',');
-  if(message[0]==='metro')
+  var message = JSON.parse(text);
+  if(message['ch']==='metro')
   {
-    console.log("Metro Detected:"+message[1]);
+    console.log("Metro Detected:"+message['vex']);
     var xAxis = new THREE.Vector3(0,0,-1);
-    rotateAroundWorldAxis(cube, xAxis, (parseInt(message[1])*2.0) *Math.PI / 180.0);
+    rotateAroundWorldAxis(cube, xAxis, (parseInt(message['vex'])*2.0) *Math.PI / 180.0);
   }
+  if(message['ch'].startsWith('ch'))
+  {
+    let channel = parseInt(message['ch'].substr(2,1))
+    vex = message['vex'];
+    str = '"clef": "treble", "notes":[' ;
+    for(var i=0;i<vex.length;i++)
+    {
+      if(i)
+      {
+        str+=",";
+      }
+      var keysStr = "";
+      for(var k=0;k<vex[i][0].length;k++)
+      {
+        if(k)
+        {
+          keysStr+=",";
+        }
+        keysStr += '"'+vex[i][0][k]+'"';
+      } 
+      str+='{ "duration":"'+vex[i][1]+'", "keys": ['+keysStr+']}';
+    }
+    str += "]";
+    vexStr[channel-1]=str;
+  }
+  var ctx = vexCanvas.getContext("2d");
+  ctx.fillStyle='white';
+  ctx.fillRect(0,0,vexCanvas.width,vexCanvas.height);
+  ctx.fillStyle='black';
+  for(var index=0;index<vexStr.length;index++)
+  {
+    var json = new Vex.Flow.JSON(JSON.parse('{ '+vexStr[index]+' }'),index*100) ;
+    json.render(vexCanvas);
+  }
+  texture.needsUpdate = true;
+  mesh.material.map.needsUpdate = true;
 };
 
 /* Examples for converting bach to json */
