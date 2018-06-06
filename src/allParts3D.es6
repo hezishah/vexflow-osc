@@ -5,7 +5,10 @@ var THREE = require('three')
    ,OBJLoader = require('three-obj-loader')
    ,OrbitControls = require('three-orbit-controls')(THREE)
    ,$ = require('jquery')
-   ,_ = require('underscore');
+   ,_ = require('underscore')
+   ,NoSleep = require('nosleep.js');
+
+var noSleep = new NoSleep();
 
 /**********************************************/
 (function() {
@@ -205,6 +208,11 @@ function showHide(e) {
   {
     document.body.prepend( button );
     $("body").css('cursor', '');
+    noSleep.disable();
+  }
+  else
+  {
+    noSleep.enable();
   }
   bVisible = !bVisible;
 }
