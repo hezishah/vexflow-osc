@@ -1,11 +1,45 @@
 <html>
 	<meta charset="utf-8">
 	<head>
+		<style>
+			.button {
+			background-color: Crimson;  
+			border-radius: 5px;
+			color: white;
+			padding: .5em;
+			text-decoration: none;
+			}
+
+			.button:focus,
+			.button:hover {
+			background-color: FireBrick;
+			color: White;
+			}
+
+			.content {
+			display: none;
+			margin: 1em 0;
+			}
+
+			.content.active,
+			.no-js .content {
+			display: block;
+			}
+		</style>
 	</head>
 	<body style='margin: 0px; overflow: hidden; text-align:center;'>
-		<!--<button id="fullscreen" onclick="full()">Full Screen</button>-->
-		<!-- These are external to jsonrpc.min.js intentionally, to reduce file size and reuse them for other libraries. -->
-		<script src="./THREEx.FullScreen.js" charset="utf-8"></script>
-		<script src="./bundle.js" charset="utf-8"></script>
+		<br/><br/>
+		<a href='./allParts3D.html' class="button js-button">All Parts 3D</a>
+		<br/><br/>
+		<a href='./singlePart.html?part=1' class="button js-button">Part 1</a>
+		<br/><br/>
+		<a href='./singlePart.html?part=2' class="button js-button">Part 2</a>
+		<br/><br/>
+		<a href='./singlePart.html?part=3' class="button js-button">Part 3</a>
+		<br/><br/>
+		<a href='./singlePart.html?part=4' class="button js-button">Part 4</a>
+		<br/><br/>
+		<a href='./singlePart.html?part=5' class="button js-button">Part 5</a>
+		<br/><br/>
 	</body>
 </html>

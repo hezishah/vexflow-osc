@@ -1,10 +1,12 @@
 var THREE = require('three')
+   ,TWEEN = require('tween')
    ,Vex = require('vexflow')
    ,RoundedBoxGeometry = require('three-rounded-box')(THREE) //pass your instance of three
    ,OBJLoader = require('three-obj-loader')
    ,OrbitControls = require('three-orbit-controls')(THREE)
    ,$ = require('jquery')
    ,_ = require('underscore');
+
 /**********************************************/
 (function() {
 
@@ -187,6 +189,7 @@ button.onclick = function full() {
   THREEx.FullScreen.request();
   $("body").css('cursor', 'none');
 };
+
 document.addEventListener('webkitfullscreenchange', function(e) {
   showHide(e);
 }, false);
@@ -206,6 +209,10 @@ function showHide(e) {
   bVisible = !bVisible;
 }
 document.body.appendChild( button );
+
+var tw = document.createElement("BUTTON");
+tw.innerText = "Animate";
+document.body.appendChild( tw );
 
 var scene = new THREE.Scene();
 var camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, .1, 1000 );
@@ -272,7 +279,6 @@ json.render(vexCanvas,{scale:scale/2});
 var texture = new THREE.Texture(vexCanvas);
 texture.magFilter = true;
 texture.mipmaps = true;
-texture.needsUpdate = true;
 
 var geometry = new RoundedBoxGeometry( 1, 1, 3, .1, 16);
 var material = new THREE.MeshStandardMaterial( { color: 0xFFFFFFFF } );
@@ -298,16 +304,37 @@ scene.add( mesh );
 
 camera.position.z = 5;
 
+var lastTime = 0;
+
+var tw1 = null;
+var tw2 = null;
+tw.onclick = function full() {
+  new TWEEN.Tween( camera.position ).to( {
+    x: cube.position.x,
+    y: cube.position.y,
+    z: cube.position.z+5}, 6000 )
+  .easing( TWEEN.Easing.Sinusoidal.InOut).start(lastTime);
+
+  new TWEEN.Tween( controls.target ).to( {
+    x: mesh.position.x,
+    y: mesh.position.y,
+    z: mesh.position.z}, 6000 )
+  .easing( TWEEN.Easing.Sinusoidal.InOut).start(lastTime);
+};
+
 //Create a helper for the shadow camera (optional)
 //var helper = new THREE.CameraHelper( light.shadow.camera );
 //scene.add( helper );
 
-function animate() {
+function animate(time) {
+
   requestAnimationFrame( animate );
   renderer.shadowMap.enabled = true;
+  TWEEN.update(time);
+  controls.update();
   renderer.render( scene, camera );
+  lastTime = time;
 
-  //controls.update();
 }
 animate();
 
@@ -339,13 +366,25 @@ var ws = new WebSocket('ws://' + host);
 var vexStr = ["","","","",""]
 ws.onmessage = function (event) {
   var text = event.data;
-  console.log(text);
   var message = JSON.parse(text);
   if(message['ch']==='metro')
   {
-    console.log("Metro Detected:"+message['vex']);
+    var bitCount = parseInt(message['vex']);
     var xAxis = new THREE.Vector3(0,0,-1);
     rotateAroundWorldAxis(cube, xAxis, (360.0/32.0) *Math.PI / 180.0);
+    if(bitCount%4==0)
+    {
+      var ctx = vexCanvas.getContext("2d");
+      ctx.fillStyle='white';
+      ctx.fillRect(0,0,vexCanvas.width,vexCanvas.height);
+      ctx.fillStyle='black';
+      for(var index=0;index<vexStr.length;index++)
+      {
+        var json = new Vex.Flow.JSON(JSON.parse('{ "clef": "treble", "notes":['+vexStr[index]+' ]}'),index*100) ;
+        json.render(vexCanvas);
+      }
+      material2.map.needsUpdate = true;
+    }  
   }
   if(message['ch'].startsWith('ch'))
   {
@@ -381,17 +420,6 @@ ws.onmessage = function (event) {
       vexStr[channel-1]+=', { "barnote": "true" },';
     vexStr[channel-1]+=str;
   }
-  var ctx = vexCanvas.getContext("2d");
-  ctx.fillStyle='white';
-  ctx.fillRect(0,0,vexCanvas.width,vexCanvas.height);
-  ctx.fillStyle='black';
-  for(var index=0;index<vexStr.length;index++)
-  {
-    var json = new Vex.Flow.JSON(JSON.parse('{ "clef": "treble", "notes":['+vexStr[index]+' ]}'),index*100) ;
-    json.render(vexCanvas);
-  }
-  texture.needsUpdate = true;
-  mesh.material.map.needsUpdate = true;
 };
 
 /* Examples for converting bach to json */
