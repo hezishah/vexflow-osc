@@ -57,9 +57,9 @@ String.prototype.replaceAll = function(search, replacement) {
     return target.replace(new RegExp(search, 'g'), replacement);
 };
 var pitchClass = ['A','Bb','B','C','Db','D','Eb','E','F','Gb','G','Ab'];
-var intervalDict = {'1/4': 'q', '1/8': '8d', '1/16': '16', '-1/4': 'qr', '-1/8': '8dr', '-1/16': '16r' };
+var intervalDict = {'1': '1', '1/2': '2', '1/4': '4', '1/8': '8', '1/16': '16', '-1/4': '4r', '-1/8': '8r', '-1/16': '16r' };
 
-var intervalDict2 = {'w': 2.0, 'w': 2.0, 'q': 1.0, '8d': 0.5, '16': 0.25 };
+var intervalDict2 = {'1': 4.0, '2': 2.0, '4': 1.0, '8': 0.5, '16': 0.25 };
 
 function bachToJson(bachData)
 {
@@ -128,11 +128,12 @@ function bachToJson(bachData)
         }
     }
     var index = 0;
+    var qCount = 0;
     for(barsIndex in barsNotes)
     {
         bars.push(
             barsNotes[barsIndex].map(function(e, i) {
-                var retval = null
+                var retval = null;
                 if(intervalsArray[index].endsWith('r'))
                 {
                     retval = [["B"], intervalsArray[index]];
@@ -141,9 +142,63 @@ function bachToJson(bachData)
                 {
                     retval = [e, intervalsArray[index]];
                 }
+                qCount += intervalDict2[intervalsArray[index].replace('r','')]
+                qCount %= 1;
                 index++;
                 return retval;
             }));
+    }
+    /* Split if quarter is placed in a half bit */
+    for(var bar in bars)
+    {
+        for(var entry in bars[bar])
+        {
+            noteData = bars[bar][entry];
+            interval = noteData[1]
+            if(qCount+intervalDict2[interval.replace('r','')]>1.0)
+            {
+                if(interval.endsWith('r'))
+                {
+                    currentInterval = 2*parseInt(interval.replace('r',''));
+                    bars[bar].splice(entry,1,[["B"], currentInterval.toString()+'r']);
+                    bars[bar].splice(entry+1,0, [["B"], currentInterval.toString()+'r'] );
+                }
+                else
+                {
+                    currentInterval = 2*parseInt(interval);
+                    bars[bar].splice(entry,1,[noteData[0], currentInterval.toString()]);
+                    bars[bar].splice(entry+1,0, [noteData[0], currentInterval.toString()]);
+                }
+            }
+            qCount += intervalDict2[interval.replace('r','')]
+            qCount %= 1;
+        }
+    }
+    /* Join same note or rests */
+    for(var bar in bars)
+    {
+        for(var entry in bars[bar])
+        {
+            noteData = bars[bar][entry];
+            interval = noteData[1]
+            if(qCount+intervalDict2[interval.replace('r','')]>1.0)
+            {
+                if(interval.endsWith('r'))
+                {
+                    currentInterval = 2*parseInt(interval.replace('r',''));
+                    bars[bar].splice(entry,1,[["B"], currentInterval.toString()+'r']);
+                    bars[bar].splice(entry+1,0, [["B"], currentInterval.toString()+'r'] );
+                }
+                else
+                {
+                    currentInterval = 2*parseInt(interval);
+                    bars[bar].splice(entry,1,[noteData[0], currentInterval.toString()]);
+                    bars[bar].splice(entry+1,0, [noteData[0], currentInterval.toString()]);
+                }
+            }
+            qCount += intervalDict2[interval.replace('r','')]
+            qCount %= 1;
+        }
     }
     return bars;
 }
