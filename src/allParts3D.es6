@@ -186,9 +186,14 @@ var controls;
 
 var button = document.createElement("BUTTON");
 button.innerText = "Full Screen";
+
+var tw = document.createElement("BUTTON");
+tw.innerText = "Animate";
+
 var bVisible = true;
 button.onclick = function full() {
   button.remove();
+  tw.remove();
   THREEx.FullScreen.request();
   $("body").css('cursor', 'none');
 };
@@ -206,6 +211,7 @@ function showHide(e) {
   var b = document.getElementById('fullscreen');
   if(!bVisible)
   {
+    document.body.prepend( tw );
     document.body.prepend( button );
     $("body").css('cursor', '');
     noSleep.disable();
@@ -218,8 +224,6 @@ function showHide(e) {
 }
 document.body.appendChild( button );
 
-var tw = document.createElement("BUTTON");
-tw.innerText = "Animate";
 document.body.appendChild( tw );
 
 var scene = new THREE.Scene();
@@ -295,7 +299,7 @@ cube.overdraw = true;
 cube.doubleSided = true;
 cube.castShadow = true; //default is false
 cube.receiveShadow = false; //default
-cube.position.y += -2;
+cube.position.x += 3;
 scene.add( cube );
 
 
@@ -371,7 +375,8 @@ function rotateAroundWorldAxis(object, axis, radians) {
 
 var host = window.document.location.host;
 var ws = new WebSocket('ws://' + host);
-var vexStr = ["","","","",""]
+var vexStr = ["","","","",""];
+var lastVexStr = ["","","","",""];
 ws.onmessage = function (event) {
   var text = event.data;
   var message = JSON.parse(text);
@@ -424,9 +429,18 @@ ws.onmessage = function (event) {
         str+='{ "duration":"'+vex[i][1]+'", "keys": ['+keysStr+']}';
       }
     }
-    if(vexStr[channel-1].length)
+    /*if(vexStr[channel-1].length)
       vexStr[channel-1]+=', { "barnote": "true" },';
-    vexStr[channel-1]+=str;
+    vexStr[channel-1]+=str;*/
+    if(lastVexStr[channel-1].length==0)
+    {
+      vexStr[channel-1] = str +', { "barnote": "true" },'+ str;
+    }
+    else
+    {
+      vexStr[channel-1] = lastVexStr[channel-1] +', { "barnote": "true" },'+ str;
+    }
+    lastVexStr[channel-1] = str;
   }
 };
 

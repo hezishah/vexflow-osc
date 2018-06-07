@@ -216,6 +216,8 @@ document.body.appendChild( button );
 window.addEventListener( 'resize', onWindowResize, false );
 
 function onWindowResize(){
+  vexCanvas.width = window.innerWidth;
+	vexCanvas.height = window.innerHeight;
 }
 
 var selectedChannel = parseInt(decodeURIComponent(window.location.search.substr(1).split('=')[1]));
@@ -250,6 +252,7 @@ document.body.appendChild(vexCanvas);
 var host = window.document.location.host;
 var ws = new WebSocket('ws://' + host);
 var vexStr = ""
+var lastVexStr = ""
 ws.onmessage = function (event) {
   var text = event.data;
   console.log(text);
@@ -299,9 +302,17 @@ ws.onmessage = function (event) {
           str+='{ "duration":"'+vex[i][1]+'", "keys": ['+keysStr+']}';
         }
       }
-      if(vexStr.length)
-        vexStr+=', { "barnote": "true" },';
-      vexStr+=str;
+      /*if(vexStr.length)
+        vexStr+=', { "barnote": "true" },';*/
+      if(lastVexStr.length==0)
+      {
+        vexStr = str +', { "barnote": "true" },'+ str;
+      }
+      else
+      {
+        vexStr = lastVexStr +', { "barnote": "true" },'+ str;
+      }
+      lastVexStr = str;
     }
   }
 };
