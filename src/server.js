@@ -128,11 +128,12 @@ function bachToJson(bachData)
         }
     }
     var index = 0;
+    var qCount = 0;
     for(barsIndex in barsNotes)
     {
         bars.push(
             barsNotes[barsIndex].map(function(e, i) {
-                var retval = null
+                var retval = null;
                 if(intervalsArray[index].endsWith('r'))
                 {
                     retval = [["B"], intervalsArray[index]];
@@ -141,9 +142,63 @@ function bachToJson(bachData)
                 {
                     retval = [e, intervalsArray[index]];
                 }
+                qCount += intervalDict2[intervalsArray[index].replace('r','')]
+                qCount %= 1;
                 index++;
                 return retval;
             }));
+    }
+    /* Split if quarter is placed in a half bit */
+    for(var bar in bars)
+    {
+        for(var entry in bars[bar])
+        {
+            noteData = bars[bar][entry];
+            interval = noteData[1]
+            if(qCount+intervalDict2[interval.replace('r','')]>1.0)
+            {
+                if(interval.endsWith('r'))
+                {
+                    currentInterval = 2*parseInt(interval.replace('r',''));
+                    bars[bar].splice(entry,1,[["B"], currentInterval.toString()+'r']);
+                    bars[bar].splice(entry+1,0, [["B"], currentInterval.toString()+'r'] );
+                }
+                else
+                {
+                    currentInterval = 2*parseInt(interval);
+                    bars[bar].splice(entry,1,[noteData[0], currentInterval.toString()]);
+                    bars[bar].splice(entry+1,0, [noteData[0], currentInterval.toString()]);
+                }
+            }
+            qCount += intervalDict2[interval.replace('r','')]
+            qCount %= 1;
+        }
+    }
+    /* Join same note or rests */
+    for(var bar in bars)
+    {
+        for(var entry in bars[bar])
+        {
+            noteData = bars[bar][entry];
+            interval = noteData[1]
+            if(qCount+intervalDict2[interval.replace('r','')]>1.0)
+            {
+                if(interval.endsWith('r'))
+                {
+                    currentInterval = 2*parseInt(interval.replace('r',''));
+                    bars[bar].splice(entry,1,[["B"], currentInterval.toString()+'r']);
+                    bars[bar].splice(entry+1,0, [["B"], currentInterval.toString()+'r'] );
+                }
+                else
+                {
+                    currentInterval = 2*parseInt(interval);
+                    bars[bar].splice(entry,1,[noteData[0], currentInterval.toString()]);
+                    bars[bar].splice(entry+1,0, [noteData[0], currentInterval.toString()]);
+                }
+            }
+            qCount += intervalDict2[interval.replace('r','')]
+            qCount %= 1;
+        }
     }
     return bars;
 }
