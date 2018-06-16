@@ -1,9 +1,19 @@
 var Vex = require('vexflow')
    ,$ = require('jquery')
    ,_ = require('underscore')
-   ,NoSleep = require('nosleep.js');
+   ,NoSleep = require('nosleep.js')
+   ,navigator = require('navigator');
 
 var noSleep = new NoSleep();
+
+function enableNoSleep() {
+  noSleep.enable();
+  document.removeEventListener('touchstart', enableNoSleep, false);
+}
+
+// Enable wake lock.
+// (must be wrapped in a user input event handler e.g. a mouse or touch handler)
+document.addEventListener('touchstart', enableNoSleep, false);
 
 /**********************************************/
 (function() {
@@ -12,11 +22,14 @@ var noSleep = new NoSleep();
     throw "Please be sure vexflow is required before requiring vexflow.json."
   }
 
-  Vex.Flow.JSON = function(data, offset) {
+  Vex.Flow.JSON = function(data, offset, bitCount) {
     this.data = data;
     this.stave_offset = offset;
     this.stave_delta = 60;
     this.staves = {};
+    this.bitCount = bitCount;
+    this.bitIndex = 0.0;
+    this.first = true;
     this.interpret_data();
   }
 
@@ -101,14 +114,43 @@ var noSleep = new NoSleep();
     }, this);
   };
 
-  Vex.Flow.JSON.prototype.stave_notes = function(notes) {
+  Vex.Flow.JSON.prototype.stave_notes = function(notes) {    
     return _(notes).map(function(note) {
       if (note.barnote) { return new Vex.Flow.BarNote(); }
-      
       var stave_note;
       note.duration || (note.duration = "h");
+      if(note.duration.startsWith('8'))
+      {
+        this.bitIndex += 0.5;
+      }
+      if(note.duration.startsWith('q'))
+      {
+        this.bitIndex += 1.0;
+      }
+      if(note.duration.startsWith('w'))
+      {
+        this.bitIndex += 2.0;
+      }
+      if(note.duration.startsWith('h'))
+      {
+        this.bitIndex += 4.0;
+      }
+      
       note.clef = "treble"; // Forcing to treble for now, even though bass may be present (we just line it up properly)
       stave_note = new Vex.Flow.StaveNote(note);
+      //stave_note.setStemStyle({ strokeStyle: 'green' });
+      //stave_note.setStemStyle({ strokeStyle: 'orange' });
+      //stave_note.setKeyStyle(0, { fillStyle: 'chartreuse' });
+      if(this.bitIndex <= this.bitCount)
+      {
+        stave_note.setStyle({ fillStyle: 'tomato', strokeStyle: 'tomato' });
+      }
+      else
+      {
+        stave_note.setStyle({ fillStyle: 'black', strokeStyle: 'black' });
+      }
+      //if(this.bitIndex <= this.bitCount)
+      //this.bitIndex++;
 
       _(note.keys).each(function(key, i) {
         var accidental, note_portion;
@@ -120,7 +162,7 @@ var noSleep = new NoSleep();
         }
       });
       return stave_note;
-    });
+    }, this);
   };
   
   Vex.Flow.JSON.prototype.draw_notes = function(notes) {
@@ -203,11 +245,6 @@ function showHide(e) {
   {
     document.body.prepend( button );
     $("body").css('cursor', '');
-    noSleep.disable();
-  }
-  else
-  {
-    noSleep.enable();
   }
   bVisible = !bVisible;
 }
@@ -238,7 +275,7 @@ ctx.canvas.width = window.innerWidth*scale/2.0;
 ctx.canvas.height = window.innerHeight*scale/2.0;
 ctx.fillStyle='white';
 ctx.fillRect(0,0,vexCanvas.width,vexCanvas.height);
-ctx.fillStyle='black';
+ctx.fillStyle='yello';
 var json = new Vex.Flow.JSON(["C", "E", "G", "Bb"]);
 json.render(vexCanvas,{scale:scale/2});
 document.body.appendChild(vexCanvas);
@@ -260,13 +297,13 @@ ws.onmessage = function (event) {
   if(message['ch']==='metro')
   {
     var bitCount = parseInt(message['vex']);
-    if(bitCount%4==0)
+    //if(bitCount%4==0)
     {
       var ctx = vexCanvas.getContext("2d");
       ctx.fillStyle='white';
       ctx.fillRect(0,0,vexCanvas.width,vexCanvas.height);
       ctx.fillStyle='black';
-      var json = new Vex.Flow.JSON(JSON.parse('{ "clef": "treble", "notes":['+vexStr+' ]}'),100) ;
+      var json = new Vex.Flow.JSON(JSON.parse('{ "clef": "treble", "notes":['+vexStr+' ]}'),100, 1+((bitCount-1) % 4) ) ;
       json.render(vexCanvas);
     }  
   }

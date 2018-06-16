@@ -6,9 +6,19 @@ var THREE = require('three')
    ,OrbitControls = require('three-orbit-controls')(THREE)
    ,$ = require('jquery')
    ,_ = require('underscore')
-   ,NoSleep = require('nosleep.js');
+   ,NoSleep = require('nosleep.js')
+   ,navigator = require('navigator');
 
 var noSleep = new NoSleep();
+
+function enableNoSleep() {
+  noSleep.enable();
+  document.removeEventListener('touchstart', enableNoSleep, false);
+}
+
+// Enable wake lock.
+// (must be wrapped in a user input event handler e.g. a mouse or touch handler)
+document.addEventListener('touchstart', enableNoSleep, false);
 
 /**********************************************/
 (function() {
@@ -214,11 +224,6 @@ function showHide(e) {
     document.body.prepend( tw );
     document.body.prepend( button );
     $("body").css('cursor', '');
-    noSleep.disable();
-  }
-  else
-  {
-    noSleep.enable();
   }
   bVisible = !bVisible;
 }

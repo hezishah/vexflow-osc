@@ -57,9 +57,9 @@ String.prototype.replaceAll = function(search, replacement) {
     return target.replace(new RegExp(search, 'g'), replacement);
 };
 var pitchClass = ['A','Bb','B','C','Db','D','Eb','E','F','Gb','G','Ab'];
-var intervalDict = {'1/4': 'q', '1/8': '8d', '1/16': '16', '-1/4': 'qr', '-1/8': '8dr', '-1/16': '16r' };
+var intervalDict = {'1/4': 'q', '1/8': '8', '1/16': '16', '-1/4': 'qr', '-1/8': '8r', '-1/16': '16r' };
 
-var intervalDict2 = {'w': 2.0, 'w': 2.0, 'q': 1.0, '8d': 0.5, '16': 0.25 };
+var intervalDict2 = {'h':4.0, 'w': 2.0, 'q': 1.0, '8d': 0.5, '16': 0.25 };
 
 function bachToJson(bachData)
 {
@@ -195,7 +195,7 @@ l5 = new listenPort(5555,function(msg, rinfo){
     console.log(`${msg}`);
 });
 */
-l6 = new listenPort(5556,function(msg, rinfo){
+l6 = new listenPort(5562,function(msg, rinfo){
     for(var ws in globalws)
     {
         str = `${msg}`[0];
