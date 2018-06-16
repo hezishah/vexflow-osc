@@ -29,7 +29,6 @@ document.addEventListener('touchstart', enableNoSleep, false);
     this.staves = {};
     this.bitCount = bitCount;
     this.bitIndex = 0.0;
-    this.first = true;
     this.interpret_data();
   }
 
@@ -149,8 +148,6 @@ document.addEventListener('touchstart', enableNoSleep, false);
       {
         stave_note.setStyle({ fillStyle: 'black', strokeStyle: 'black' });
       }
-      //if(this.bitIndex <= this.bitCount)
-      //this.bitIndex++;
 
       _(note.keys).each(function(key, i) {
         var accidental, note_portion;

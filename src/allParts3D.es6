@@ -27,11 +27,13 @@ document.addEventListener('touchstart', enableNoSleep, false);
     throw "Please be sure vexflow is required before requiring vexflow.json."
   }
 
-  Vex.Flow.JSON = function(data, offset) {
+  Vex.Flow.JSON = function(data, offset, bitCount) {
     this.data = data;
     this.stave_offset = offset;
     this.stave_delta = 60;
     this.staves = {};
+    this.bitCount = bitCount;
+    this.bitIndex = 0.0;
     this.interpret_data();
   }
 
@@ -122,8 +124,36 @@ document.addEventListener('touchstart', enableNoSleep, false);
       
       var stave_note;
       note.duration || (note.duration = "h");
+      if(note.duration.startsWith('8'))
+      {
+        this.bitIndex += 0.5;
+      }
+      if(note.duration.startsWith('q'))
+      {
+        this.bitIndex += 1.0;
+      }
+      if(note.duration.startsWith('w'))
+      {
+        this.bitIndex += 2.0;
+      }
+      if(note.duration.startsWith('h'))
+      {
+        this.bitIndex += 4.0;
+      }
+      
       note.clef = "treble"; // Forcing to treble for now, even though bass may be present (we just line it up properly)
       stave_note = new Vex.Flow.StaveNote(note);
+      //stave_note.setStemStyle({ strokeStyle: 'green' });
+      //stave_note.setStemStyle({ strokeStyle: 'orange' });
+      //stave_note.setKeyStyle(0, { fillStyle: 'chartreuse' });
+      if(this.bitIndex <= this.bitCount)
+      {
+        stave_note.setStyle({ fillStyle: 'tomato', strokeStyle: 'tomato' });
+      }
+      else
+      {
+        stave_note.setStyle({ fillStyle: 'black', strokeStyle: 'black' });
+      }
 
       _(note.keys).each(function(key, i) {
         var accidental, note_portion;
@@ -135,7 +165,7 @@ document.addEventListener('touchstart', enableNoSleep, false);
         }
       });
       return stave_note;
-    });
+    }, this);
   };
   
   Vex.Flow.JSON.prototype.draw_notes = function(notes) {
@@ -390,7 +420,7 @@ ws.onmessage = function (event) {
     var bitCount = parseInt(message['vex']);
     var xAxis = new THREE.Vector3(0,0,-1);
     rotateAroundWorldAxis(cube, xAxis, (360.0/32.0) *Math.PI / 180.0);
-    if(bitCount%4==0)
+    //if(bitCount%4==0)
     {
       var ctx = vexCanvas.getContext("2d");
       ctx.fillStyle='white';
@@ -398,7 +428,7 @@ ws.onmessage = function (event) {
       ctx.fillStyle='black';
       for(var index=0;index<vexStr.length;index++)
       {
-        var json = new Vex.Flow.JSON(JSON.parse('{ "clef": "treble", "notes":['+vexStr[index]+' ]}'),index*100) ;
+        var json = new Vex.Flow.JSON(JSON.parse('{ "clef": "treble", "notes":['+vexStr[index]+' ]}'),index*100, 1+((bitCount-1)%4)) ;
         json.render(vexCanvas);
       }
       material2.map.needsUpdate = true;
