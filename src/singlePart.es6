@@ -294,15 +294,18 @@ ws.onmessage = function (event) {
   if(message['ch']==='metro')
   {
     var bitCount = parseInt(message['vex']);
-    //if(bitCount%4==0)
+    if((bitCount-1)%4==0)
+    {
+      activeVexStr = vexStr.slice();
+    }
     {
       var ctx = vexCanvas.getContext("2d");
       ctx.fillStyle='white';
       ctx.fillRect(0,0,vexCanvas.width,vexCanvas.height);
       ctx.fillStyle='black';
-      var json = new Vex.Flow.JSON(JSON.parse('{ "clef": "treble", "notes":['+vexStr+' ]}'),100, 1+((bitCount-1) % 4) ) ;
+      var json = new Vex.Flow.JSON(JSON.parse('{ "clef": "treble", "notes":['+activeVexStr+' ]}'),100, 1+((bitCount-1) % 4) ) ;
       json.render(vexCanvas);
-    }  
+    }
   }
   if(message['ch'].startsWith('ch'))
   {

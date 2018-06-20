@@ -46,8 +46,8 @@ function listenPort(portNum, onMessage) {
     });
 
     server.on('listening', () => {
-    const address = server.address();
-    console.log(`server listening ${address.address}:${address.port}`);
+        const address = server.address();
+        console.log(`server listening ${address.address}:${address.port}`);
     });
 
     server.bind(portNum);
@@ -56,10 +56,10 @@ String.prototype.replaceAll = function(search, replacement) {
     var target = this;
     return target.replace(new RegExp(search, 'g'), replacement);
 };
-var pitchClass = ['A','Bb','B','C','Db','D','Eb','E','F','Gb','G','Ab'];
+var pitchClass = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
 var intervalDict = {'1/4': 'q', '1/8': '8', '1/16': '16', '-1/4': 'qr', '-1/8': '8r', '-1/16': '16r' };
 
-var intervalDict2 = {'h':4.0, 'w': 2.0, 'q': 1.0, '8d': 0.5, '16': 0.25 };
+var intervalDict2 = {'h':4.0, 'w': 2.0, 'q': 1.0, '8': 0.5, '16': 0.25 };
 
 function bachToJson(bachData)
 {
@@ -103,7 +103,11 @@ function bachToJson(bachData)
                     for(var iStr in valStr)
                     {
                         if(valStr[iStr].length)
-                            pitchList.push(pitchClass[(3+parseInt(valStr[iStr])/100)%12]);
+                        {
+                            let octave = ((parseInt(valStr[iStr])-6000)/1200)+4;
+                            let pitch = (parseInt(valStr[iStr])/100)%12;
+                            pitchList.push(pitchClass[pitch]+"/"+(octave).toString());
+                        }
                     }
                     if(pitchList.length)
                         notesArray.push(pitchList);
@@ -136,14 +140,12 @@ function bachToJson(bachData)
                 var retval = null;
                 if(intervalsArray[index].endsWith('r'))
                 {
-                    retval = [["B"], intervalsArray[index]];
+                    retval = [["B/4"], intervalsArray[index]];
                 }
                 else
                 {
                     retval = [e, intervalsArray[index]];
                 }
-                qCount += intervalDict2[intervalsArray[index].replace('r','')]
-                qCount %= 1;
                 index++;
                 return retval;
             }));
@@ -151,27 +153,41 @@ function bachToJson(bachData)
     /* Split if quarter is placed in a half bit */
     for(var bar in bars)
     {
-        for(var entry in bars[bar])
+        var updated = true;
+        while(updated)
         {
-            noteData = bars[bar][entry];
-            interval = noteData[1]
-            if(qCount+intervalDict2[interval.replace('r','')]>1.0)
+            updated = false;
+            qCount = 0;
+            for(var entry in bars[bar])
             {
-                if(interval.endsWith('r'))
+                noteData = bars[bar][entry];
+                interval = noteData[1];
+                let currentLen = intervalDict2[interval.replace('r','')];
+                if(qCount+currentLen>1.0)
                 {
-                    currentInterval = 2*parseInt(interval.replace('r',''));
-                    bars[bar].splice(entry,1,[["B"], currentInterval.toString()+'r']);
-                    bars[bar].splice(entry+1,0, [["B"], currentInterval.toString()+'r'] );
+                    const keys = Object.keys(intervalDict2);
+                    const values = Object.values(intervalDict2);
+                    let newVal = (intervalDict2[interval.replace('r','')]/2.0);
+                    let index = values.indexOf(newVal);
+                    let newInterval = keys[index];
+                    if(interval.endsWith('r'))
+                    {
+                        bars[bar].splice(parseInt(entry),1,[["B/4"], newInterval+'r']);
+                        bars[bar].splice(parseInt(entry)+1,0, [["B/4"], newInterval+'r'] );
+                        updated = true;
+                        break;
+                    }
+                    else
+                    {
+                        bars[bar].splice(parseInt(entry),1,[noteData[0], newInterval]);
+                        bars[bar].splice(parseInt(entry)+1,0, [noteData[0], newInterval]);
+                        updated = true;
+                        break;
+                    }
                 }
-                else
-                {
-                    currentInterval = 2*parseInt(interval);
-                    bars[bar].splice(entry,1,[noteData[0], currentInterval.toString()]);
-                    bars[bar].splice(entry+1,0, [noteData[0], currentInterval.toString()]);
-                }
+                qCount += intervalDict2[interval.replace('r','')]
+                qCount %= 1;
             }
-            qCount += intervalDict2[interval.replace('r','')]
-            qCount %= 1;
         }
     }
     /* Join same note or rests */
@@ -186,8 +202,8 @@ function bachToJson(bachData)
                 if(interval.endsWith('r'))
                 {
                     currentInterval = 2*parseInt(interval.replace('r',''));
-                    bars[bar].splice(entry,1,[["B"], currentInterval.toString()+'r']);
-                    bars[bar].splice(entry+1,0, [["B"], currentInterval.toString()+'r'] );
+                    bars[bar].splice(entry,1,[["B/4"], currentInterval.toString()+'r']);
+                    bars[bar].splice(entry+1,0, [["B/4"], currentInterval.toString()+'r'] );
                 }
                 else
                 {
@@ -266,8 +282,9 @@ lb1 = new listenPort(5557,function(msg, rinfo){
     for(var ws in globalws)
     {
         globalws[ws].send(vexJson);
+        console.log(`${vexJson}`);
     }
-    console.log(`${msg}`);
+    //console.log(`${msg}`);
 });
 lb2 = new listenPort(5558,function(msg, rinfo){
     vexJson = bachToJson(msg.toString());
@@ -275,8 +292,9 @@ lb2 = new listenPort(5558,function(msg, rinfo){
     for(var ws in globalws)
     {
         globalws[ws].send(vexJson);
+        console.log(`${vexJson}`);
     }
-    console.log(`${msg}`);
+    //console.log(`${msg}`);
 });
 lb3 = new listenPort(5559,function(msg, rinfo){
     vexJson = bachToJson(msg.toString());
@@ -284,8 +302,9 @@ lb3 = new listenPort(5559,function(msg, rinfo){
     for(var ws in globalws)
     {
         globalws[ws].send(vexJson);
+        console.log(`${vexJson}`);
     }
-    console.log(`${msg}`);
+    //console.log(`${msg}`);
 });
 lb4 = new listenPort(5560,function(msg, rinfo){
     vexJson = bachToJson(msg.toString());
@@ -293,8 +312,9 @@ lb4 = new listenPort(5560,function(msg, rinfo){
     for(var ws in globalws)
     {
         globalws[ws].send(vexJson);
+        console.log(`${vexJson}`);
     }
-    console.log(`${msg}`);
+    //console.log(`${msg}`);
 });
 lb5 = new listenPort(5561,function(msg, rinfo){
     vexJson = bachToJson(msg.toString());
@@ -302,8 +322,8 @@ lb5 = new listenPort(5561,function(msg, rinfo){
     for(var ws in globalws)
     {
         globalws[ws].send(vexJson);
+        console.log(`${vexJson}`);
     }
-    console.log(`${msg}`);
 });
 
 // server listening 0.0.0.0:41234

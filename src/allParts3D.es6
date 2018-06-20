@@ -412,6 +412,7 @@ var host = window.document.location.host;
 var ws = new WebSocket('ws://' + host);
 var vexStr = ["","","","",""];
 var lastVexStr = ["","","","",""];
+var activeVexStr = ["","","","",""];
 ws.onmessage = function (event) {
   var text = event.data;
   var message = JSON.parse(text);
@@ -420,7 +421,10 @@ ws.onmessage = function (event) {
     var bitCount = parseInt(message['vex']);
     var xAxis = new THREE.Vector3(0,0,-1);
     rotateAroundWorldAxis(cube, xAxis, (360.0/32.0) *Math.PI / 180.0);
-    //if(bitCount%4==0)
+    if((bitCount-1)%4==0)
+    {
+      activeVexStr = vexStr.slice();
+    }
     {
       var ctx = vexCanvas.getContext("2d");
       ctx.fillStyle='white';
@@ -428,11 +432,11 @@ ws.onmessage = function (event) {
       ctx.fillStyle='black';
       for(var index=0;index<vexStr.length;index++)
       {
-        var json = new Vex.Flow.JSON(JSON.parse('{ "clef": "treble", "notes":['+vexStr[index]+' ]}'),index*100, 1+((bitCount-1)%4)) ;
+        var json = new Vex.Flow.JSON(JSON.parse('{ "clef": "treble", "notes":['+activeVexStr[index]+' ]}'),index*100, 1+((bitCount-1)%4)) ;
         json.render(vexCanvas);
       }
       material2.map.needsUpdate = true;
-    }  
+    }
   }
   if(message['ch'].startsWith('ch'))
   {
