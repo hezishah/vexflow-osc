@@ -334,7 +334,7 @@ cube.overdraw = true;
 cube.doubleSided = true;
 cube.castShadow = true; //default is false
 cube.receiveShadow = false; //default
-cube.position.x += 3;
+cube.position.x += 3.5;
 scene.add( cube );
 
 
@@ -437,6 +437,23 @@ ws.onmessage = function (event) {
       }
       material2.map.needsUpdate = true;
     }
+  }
+  if(message['ch']==='modus')
+  {
+    modus = parseInt(message['modus']);
+    var materials = [];
+
+    for ( var i = 0; i < 8; i ++ ) {
+
+        materials.push( new THREE.MeshBasicMaterial( { color: Math.random() * 0xffffff, side: THREE.BackSide } ) );
+
+    }
+
+    var geometry = new THREE.BoxBufferGeometry( 9, 5, 3 );
+
+    var mesh = new THREE.Mesh( geometry, materials );
+    scene.add( mesh );
+
   }
   if(message['ch'].startsWith('ch'))
   {

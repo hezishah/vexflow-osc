@@ -253,11 +253,12 @@ function onWindowResize(){
   vexCanvas.width = window.innerWidth;
 	vexCanvas.height = window.innerHeight;
 }
-
+var modus = 1;
 var selectedChannel = parseInt(decodeURIComponent(window.location.search.substr(1).split('=')[1]));
 var h = document.createElement("H1")                // Create a <h1> element
-var t = document.createTextNode("Part "+selectedChannel);     // Create a text node
-h.appendChild(t);
+var partText = document.createElement("TEXT");     // Create a text node
+partText.innerHTML = "Part "+selectedChannel+"    Modus "+modus;
+h.appendChild(partText);
 document.body.appendChild(h); 
 
 /******************************/
@@ -287,6 +288,7 @@ var host = window.document.location.host;
 var ws = new WebSocket('ws://' + host);
 var vexStr = ""
 var lastVexStr = ""
+var activeVexStr = "";
 ws.onmessage = function (event) {
   var text = event.data;
   console.log(text);
@@ -306,6 +308,11 @@ ws.onmessage = function (event) {
       var json = new Vex.Flow.JSON(JSON.parse('{ "clef": "treble", "notes":['+activeVexStr+' ]}'),100, 1+((bitCount-1) % 4) ) ;
       json.render(vexCanvas);
     }
+  }
+  if(message['ch']==='modus')
+  {
+    modus = parseInt(message['modus']);
+    partText.innerHTML ="Part "+selectedChannel+"    Modus "+modus;
   }
   if(message['ch'].startsWith('ch'))
   {

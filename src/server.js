@@ -282,9 +282,8 @@ lb1 = new listenPort(5557,function(msg, rinfo){
     for(var ws in globalws)
     {
         globalws[ws].send(vexJson);
-        console.log(`${vexJson}`);
     }
-    //console.log(`${msg}`);
+    console.log(`${vexJson}`);
 });
 lb2 = new listenPort(5558,function(msg, rinfo){
     vexJson = bachToJson(msg.toString());
@@ -292,9 +291,8 @@ lb2 = new listenPort(5558,function(msg, rinfo){
     for(var ws in globalws)
     {
         globalws[ws].send(vexJson);
-        console.log(`${vexJson}`);
     }
-    //console.log(`${msg}`);
+    console.log(`${vexJson}`);
 });
 lb3 = new listenPort(5559,function(msg, rinfo){
     vexJson = bachToJson(msg.toString());
@@ -302,9 +300,8 @@ lb3 = new listenPort(5559,function(msg, rinfo){
     for(var ws in globalws)
     {
         globalws[ws].send(vexJson);
-        console.log(`${vexJson}`);
     }
-    //console.log(`${msg}`);
+    console.log(`${vexJson}`);
 });
 lb4 = new listenPort(5560,function(msg, rinfo){
     vexJson = bachToJson(msg.toString());
@@ -312,8 +309,8 @@ lb4 = new listenPort(5560,function(msg, rinfo){
     for(var ws in globalws)
     {
         globalws[ws].send(vexJson);
-        console.log(`${vexJson}`);
     }
+    console.log(`${vexJson}`);
     //console.log(`${msg}`);
 });
 lb5 = new listenPort(5561,function(msg, rinfo){
@@ -322,8 +319,16 @@ lb5 = new listenPort(5561,function(msg, rinfo){
     for(var ws in globalws)
     {
         globalws[ws].send(vexJson);
-        console.log(`${vexJson}`);
     }
+    console.log(`${vexJson}`);
 });
 
+modus = new listenPort(5563,function(msg, rinfo){
+    let outmsg = JSON.stringify({ch:'modus', modus:parseInt(msg)});
+    for(var ws in globalws)
+    {
+        globalws[ws].send(outmsg);
+    }
+    console.log(`${outmsg}`);
+});
 // server listening 0.0.0.0:41234
